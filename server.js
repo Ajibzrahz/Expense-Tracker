@@ -8,12 +8,14 @@ const app = express();
 
 //rest of the packages
 import cookieParser from "cookie-parser";
+import cors from "cors"
 
 //database
 import connectDB from "./db/connect.js";
 
 //routes
 import authRouter from "./routes/auth-route.js";
+import categoryRouter from "./routes/category-route.js";
 
 //middlewares
 import notFound from "./middleware/not-found.js";
@@ -21,8 +23,15 @@ import errorHandlerMiddleware from "./middleware/error-handler.js";
 
 app.use(express.json());
 app.use(cookieParser(process.env.JWT_SECRET));
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL,
+    credentials: true,
+  }),
+);
 
 app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/category", categoryRouter)
 
 app.use(notFound)
 app.use(errorHandlerMiddleware)
