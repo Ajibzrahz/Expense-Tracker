@@ -16,6 +16,8 @@ import connectDB from "./db/connect.js";
 //routes
 import authRouter from "./routes/auth-route.js";
 import categoryRouter from "./routes/category-route.js";
+import transactionRouter from "./routes/transaction-route.js";
+import userRouter from "./routes/user-route.js";
 
 //middlewares
 import notFound from "./middleware/not-found.js";
@@ -32,6 +34,8 @@ app.use(
 
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/category", categoryRouter)
+app.use("/api/v1/transaction", transactionRouter)
+app.use("/api/v1/user",userRouter)
 
 app.use(notFound)
 app.use(errorHandlerMiddleware)
