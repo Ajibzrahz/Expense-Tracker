@@ -63,7 +63,7 @@ const getUserCatgory = async (req, res, next) => {
 
 const deleteCategory = async (req, res, next) => {
   try {
-    const { id } = req.query;
+    const { id } = req.params;
 
     const categoryExist = await category.findOne({
       _id: id,
@@ -84,7 +84,7 @@ const deleteCategory = async (req, res, next) => {
 
 const updateCategory = async (req, res, next) => {
   try {
-    const { id } = req.query;
+    const { id } = req.params;
 
     const categoryExist = await category.findOne({
       _id: id,

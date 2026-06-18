@@ -14,6 +14,8 @@ router
   .route("/")
   .post(createCategory)
   .get(getUserCatgory)
+router
+  .route("/:id")  
   .delete(deleteCategory)
   .patch(updateCategory);
 

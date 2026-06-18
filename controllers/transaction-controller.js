@@ -21,12 +21,101 @@ const createTransaction = async (req, res, next) => {
     });
 
     return res.status(StatusCodes.CREATED).json({
-      message: "transaction created sucessfully",
+      success: true,
       data: newTransaction,
+      message: "transaction created sucessfully",
     });
   } catch (error) {
     next(error);
   }
 };
 
-export { createTransaction };
+const getTransactions = async (req, res, next) => {};
+
+const getTransaction = async (req, res, next) => {
+  const { id } = req.params;
+  try {
+    const findtransaction = await transaction.findOne({
+      _id: id,
+      user: req.user.id,
+    });
+
+    if (!findtransaction) {
+      const err = new NotFoundError("Transaction does not exist");
+      return next(err);
+    }
+
+    return res
+      .status(StatusCodes.OK)
+      .json({ success: true, data: findtransaction, message: "successful" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateTransaction = async (req, res, next) => {
+  const { id } = req.params;
+  const { amount, description } = req.body;
+
+  try {
+    const findtransaction = await transaction.findOne({
+      _id: id,
+      user: req.user.id,
+    });
+
+    if (!findtransaction) {
+      const err = new NotFoundError("Transaction does not exist");
+      return next(err);
+    }
+
+    findtransaction.amount = req.body.amount;
+    findtransaction.description = req.body.description;
+
+    const updatedtransaction = await findtransaction.save();
+
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      data: findtransaction,
+      message: "Transaction updated successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const deleteTransaction = async (req, res, next) => {
+  const { id } = req.params;
+  try {
+    const findtransaction = await transaction.findOne({
+      _id: id,
+      user: req.user.id,
+    });
+
+    if (!findtransaction) {
+      const err = new NotFoundError("Transaction does not exist");
+      return next(err);
+    }
+
+    await transaction.findOneAndDelete({
+      _id: id,
+      user: req.user.id,
+    });
+
+    return res
+      .status(StatusCodes.OK)
+      .json({ success: true, message: "transaction deleted successfully" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const stats = async (req, res, next) => {};
+
+export {
+  createTransaction,
+  getTransaction,
+  getTransactions,
+  updateTransaction,
+  deleteTransaction,
+  stats,
+};
