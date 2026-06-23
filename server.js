@@ -18,6 +18,8 @@ import authRouter from "./routes/auth-route.js";
 import categoryRouter from "./routes/category-route.js";
 import transactionRouter from "./routes/transaction-route.js";
 import userRouter from "./routes/user-route.js";
+import dashboardRouter from "./routes/dashboard-route.js";
+import budgetRouter from "./routes/budget-route.js";
 
 //middlewares
 import notFound from "./middleware/not-found.js";
@@ -36,6 +38,8 @@ app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/categories", categoryRouter);
 app.use("/api/v1/transactions", transactionRouter);
 app.use("/api/v1/users", userRouter);
+app.use("/api/v1/analytics", dashboardRouter)
+app.use("/api/v1/budgets", budgetRouter)
 
 app.use(notFound);
 app.use(errorHandlerMiddleware);
