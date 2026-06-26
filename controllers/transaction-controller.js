@@ -2,6 +2,7 @@ import { StatusCodes } from "http-status-codes";
 import transaction from "../models/transaction.js";
 import category from "../models/category.js";
 import { NotFoundError } from "../errors/index.js";
+import { getPagination, buildPagination } from "../utils/pagination.js";
 
 const createTransaction = async (req, res, next) => {
   const { id } = req.user;
@@ -30,7 +31,32 @@ const createTransaction = async (req, res, next) => {
   }
 };
 
-const getTransactions = async (req, res, next) => {};
+
+const getTransactions = async (req, res, next) => {
+  try {
+    const { page, limit, skip } = getPagination(req.query);
+
+    const filter = { user: req.user.id };
+    // ...add type / category / date filters here...
+
+    const [data, total] = await Promise.all([
+      transaction
+        .find(filter)
+        .sort({ date: -1 })
+        .skip(skip)
+        .limit(limit),
+      transaction.countDocuments(filter),
+    ]);
+
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      data,
+      pagination: buildPagination({ page, limit, total }),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 const getTransaction = async (req, res, next) => {
   const { id } = req.params;

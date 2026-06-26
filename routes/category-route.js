@@ -11,7 +11,7 @@ const router = express.Router();
 router.use(authenticateUser);
 
 router
-  .route("/")
+  .route("")
   .post(createCategory)
   .get(getUserCatgory)
 router

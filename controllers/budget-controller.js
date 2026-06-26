@@ -2,8 +2,7 @@ import { StatusCodes } from "http-status-codes";
 import { BadRequestError, NotFoundError } from "../errors/index.js";
 import Budget from "../models/budget.js";
 import category from "../models/category.js";
-import mongoose from "mongoose";
-import transaction from "../models/transaction.js";
+import { calculateBudgetProgress } from "../service/budget-service.js";
 
 const createBudget = async (req, res, next) => {
   const { id } = req.user;
@@ -35,16 +34,23 @@ const createBudget = async (req, res, next) => {
       user: id,
     });
 
-    res.status(StatusCodes.OK).json({
+    const { spent, percentage, endDate } =
+      await calculateBudgetProgress(newBudget);
+
+    return res.status(StatusCodes.OK).json({
       success: true,
-      data: newBudget,
-      message: "Budget created",
+      data: {
+        ...newBudget.toObject(),
+        spent,
+        percentage,
+        endDate,
+      },
+      message: "budget created successfully",
     });
   } catch (error) {
     next(error);
   }
 };
-
 const getBudget = async (req, res, next) => {
   const { id } = req.params;
 
@@ -57,45 +63,8 @@ const getBudget = async (req, res, next) => {
       return next(err);
     }
 
-    const startDate = budget.startDate;
-    const endDate = new Date(startDate);
-
-    switch (budget.period) {
-      case "weekly":
-        endDate.setDate(endDate.getDate() + 7);
-        break;
-
-      case "monthly":
-        endDate.setMonth(endDate.getMonth() + 1);
-        break;
-
-      case "yearly":
-        endDate.setFullYear(endDate.getFullYear() + 1);
-        break;
-    }
-
-    const result = await transaction.aggregate([
-      {
-        $match: {
-          user: new mongoose.Types.ObjectId(budget.user),
-          category: new mongoose.Types.ObjectId(budget.category),
-          type: "expense",
-          createdAt: {
-            $gte: startDate,
-            $lte: endDate,
-          },
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          spent: { $sum: "$amount" },
-        },
-      },
-    ]);
-
-    const spent = result[0]?.spent || 0;
-    const percentage = (spent / budget.limit) * 100;
+    const { spent, percentage, endDate } =
+      await calculateBudgetProgress(budget);
 
     return res.status(StatusCodes.OK).json({
       success: true,
@@ -113,8 +82,30 @@ const getBudget = async (req, res, next) => {
 };
 
 const getBudgets = async (req, res, next) => {
-    const {id} = req.user
-}
+  try {
+    const budgets = await Budget.find({
+      user: req.user.id,
+    }).populate("category");
+
+    const data = await Promise.all(
+      budgets.map(async (budget) => {
+        const { spent, percentage, endDate } =
+          await calculateBudgetProgress(budget);
+
+        return {
+          ...budget.toObject(),
+          spent,
+          percentage,
+          endDate,
+        };
+      }),
+    );
+
+    res.status(StatusCodes.OK).json(data);
+  } catch (error) {
+    next(error);
+  }
+};
 
 const updateBudget = async (req, res, next) => {
   const { id } = req.params;
@@ -134,45 +125,46 @@ const updateBudget = async (req, res, next) => {
       },
       payload,
       { new: true },
-    );
+    ).populate("category");
+    const { spent, percentage, endDate } =
+      await calculateBudgetProgress(updatebudget);
 
-    return res
-      .status(StatusCodes.CREATED)
-      .json({
-        success: true,
-        data: updatebudget,
-        message: "budget updated successfully",
-      });
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      data: {
+        ...updatebudget.toObject(),
+        spent,
+        percentage,
+        endDate,
+      },
+      message: "budget updated successfully",
+    });
   } catch (error) {
     next(error);
   }
 };
 
-const deleteBudget = async (req, res , next) => {
-    const {id} = req.params
+const deleteBudget = async (req, res, next) => {
+  const { id } = req.params;
 
-    try {
-        const budget = await Budget.findOne({ user: req.user.id, _id: id });
+  try {
+    const budget = await Budget.findOne({ user: req.user.id, _id: id });
     if (!budget) {
       const err = new NotFoundError("Budget not found");
       return next(err);
     }
 
-    await Budget.findOneAndDelete(
-      {
-        user: req.user.id,
-        _id: id,
-      },
-    );
+    await Budget.findOneAndDelete({
+      user: req.user.id,
+      _id: id,
+    });
 
-    return res
-      .status(StatusCodes.CREATED)
-      .json({
-        success: true,
-        message: "budget updated successfully",
-      });
-    } catch (error) {
-        next(error)
-    }
-}
-export { createBudget, getBudget, updateBudget, deleteBudget };
+    return res.status(StatusCodes.CREATED).json({
+      success: true,
+      message: "budget updated successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+export { createBudget, getBudget, updateBudget, deleteBudget, getBudgets };

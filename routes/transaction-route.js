@@ -4,6 +4,7 @@ import {
   createTransaction,
   deleteTransaction,
   getTransaction,
+  getTransactions,
   updateTransaction,
 } from "../controllers/transaction-controller.js";
 import { createTransactionValidation } from "../validators/transaction-validator.js";
@@ -13,7 +14,10 @@ const router = express.Router();
 
 router.use(authenticateUser);
 
-router.post("/", validator(createTransactionValidation), createTransaction);
+router
+  .route("")
+  .post(validator(createTransactionValidation), createTransaction)
+  .get(getTransactions);
 
 router
   .route("/:id")

@@ -3,6 +3,7 @@ import {
   createBudget,
   deleteBudget,
   getBudget,
+  getBudgets,
   updateBudget,
 } from "../controllers/budget-controller.js";
 import { authenticateUser } from "../middleware/auth.js";
@@ -15,7 +16,10 @@ import {
 const router = express.Router();
 router.use(authenticateUser);
 
-router.route("").post(validator(createBudgetSchema), createBudget);
+router
+  .route("")
+  .post(validator(createBudgetSchema), createBudget)
+  .get(getBudgets);
 router
   .route("/:id")
   .get(getBudget)

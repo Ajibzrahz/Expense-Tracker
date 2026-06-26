@@ -7,10 +7,6 @@ const getSummary = async (req, res, next) => {
 
   try {
     const transactions = await transaction.find({ user: id });
-    if (!transactions) {
-      const err = new NotFoundError("Transaction not found");
-      return next(err);
-    }
 
     let totalIncome = 0;
     let totalExpense = 0;
