@@ -18,7 +18,7 @@ import { authenticateUser } from "../middleware/auth.js";
 
 const router = express.Router();
 
-router.post("/register", validator(registerValidation), register);
+router.post("/signup", validator(registerValidation), register);
 router.post("/login", validator(loginValidation), login);
 router.delete("/logout", authenticateUser, logout);
 router.get("/verify-email", verifyEmail);

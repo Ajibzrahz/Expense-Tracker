@@ -92,9 +92,7 @@ const verifyEmail = async (req, res, next) => {
 
     await user.save();
 
-    return res.status(StatusCodes.OK).json({
-      msg: "Email verified successfully",
-    });
+    return res.redirect(`${process.env.CLIENT_URL}/login?verified=true`);
   } catch (error) {
     next(error);
   }
@@ -348,5 +346,5 @@ export {
   forgotPassword,
   resetPassword,
   googleLogin,
-  getProfile
+  getProfile,
 };
