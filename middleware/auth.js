@@ -5,9 +5,19 @@ import Token from "../models/token.js";
 
 //user authentication
 const authenticateUser = async (req, res, next) => {
-  const { refreshToken, accessToken } = req.signedCookies;
-
   try {
+    // 1. Bearer token from Authorization header
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const token = authHeader.split(" ")[1];
+      const payload = isTokenValid(token);
+      req.user = payload.user;
+      return next();
+    }
+
+    // 2. Fall back to signed cookies
+    const { refreshToken, accessToken } = req.signedCookies;
+
     if (accessToken) {
       const payload = isTokenValid(accessToken);
       req.user = payload.user;

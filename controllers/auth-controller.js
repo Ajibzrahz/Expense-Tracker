@@ -9,6 +9,7 @@ import {
 import {
   attachCookiesToResponse,
   createHash,
+  createJWT,
   createUserToken,
   sendResetPasswordEmail,
   sendVerificationEmail,
@@ -34,34 +35,25 @@ const register = async (req, res, next) => {
     const isFirstAccount = (await User.countDocuments({})) === 0;
     const role = isFirstAccount ? "admin" : "user";
 
-    const verificationToken = crypto.randomBytes(40).toString("hex");
-
+    // TEMP: auto-verify new users and skip email verification while testing.
+    // Restore the email-verification flow before going to production.
     const newUser = await User.create({
       ...payload,
       role,
-      verificationToken,
-      isVerified: false,
+      isVerified: true,
+      verified: new Date(),
     });
 
-    const verificationLink = `${process.env.API_URL}/api/v1/auth/verify-email?token=${verificationToken}&email=${newUser.email}`;
-
-    try {
-      await sendVerificationEmail({
-        name: newUser.name,
-        email: newUser.email,
-        verificationLink,
-      });
-    } catch (emailError) {
-      await User.findByIdAndDelete(newUser._id);
-      throw new BadRequestError(
-        emailError.message || "Unable to send verification email",
-      );
-    }
     const categories = getDefaultCategories(newUser._id);
     await category.insertMany(categories);
 
+    const tokenUser = createUserToken(newUser);
+    const token = createJWT({ payload: { user: tokenUser } });
+
     return res.status(StatusCodes.CREATED).json({
-      msg: "Success! Please check your email to verify account",
+      success: true,
+      data: { user: tokenUser, token },
+      msg: "Success! Account created",
     });
   } catch (error) {
     next(error);
@@ -92,7 +84,9 @@ const verifyEmail = async (req, res, next) => {
 
     await user.save();
 
-    return res.redirect(`${process.env.CLIENT_URL}/login?verified=true`);
+    return res.status(StatusCodes.OK).json({
+      msg: "Email verified successfully",
+    });
   } catch (error) {
     next(error);
   }
@@ -136,9 +130,12 @@ const login = async (req, res, next) => {
       refreshToken = existingToken.refreshToken;
       attachCookiesToResponse({ res, user: tokenUser, refreshToken });
 
-      res
-        .status(StatusCodes.ACCEPTED)
-        .json({ msg: ` welcome onboard ${user.name} ` });
+      const token = createJWT({ payload: { user: tokenUser } });
+      res.status(StatusCodes.OK).json({
+        success: true,
+        data: { user: tokenUser, token },
+        msg: `welcome onboard ${user.name}`,
+      });
       return;
     }
 
@@ -151,9 +148,12 @@ const login = async (req, res, next) => {
     await Token.create(userToken);
     attachCookiesToResponse({ res, user: tokenUser, refreshToken });
 
-    return res
-      .status(StatusCodes.ACCEPTED)
-      .json({ msg: ` welcome onboard ${user.name} ` });
+    const token = createJWT({ payload: { user: tokenUser } });
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      data: { user: tokenUser, token },
+      msg: `welcome onboard ${user.name}`,
+    });
   } catch (error) {
     next(error);
   }
@@ -319,25 +319,6 @@ const resetPassword = async (req, res, next) => {
   }
 };
 
-const getProfile = async (req, res, next) => {
-  const { id } = req.user;
-
-  try {
-    const user = await User.findById(id).select("-_id -password -__v");
-    if (!user) {
-      const err = new NotFoundError("User not found");
-    }
-
-    return res.status(StatusCodes.OK).json({
-      success: true,
-      data: user,
-      message: "successful",
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
 export {
   register,
   verifyEmail,
@@ -346,5 +327,4 @@ export {
   forgotPassword,
   resetPassword,
   googleLogin,
-  getProfile,
 };
