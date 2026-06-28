@@ -319,6 +319,21 @@ const resetPassword = async (req, res, next) => {
   }
 };
 
+const getProfile = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+    if (!user) {
+      return next(new NotFoundError("User not found"));
+    }
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      data: { user },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export {
   register,
   verifyEmail,
@@ -327,4 +342,5 @@ export {
   forgotPassword,
   resetPassword,
   googleLogin,
+  getProfile
 };
